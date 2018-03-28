@@ -1,0 +1,8 @@
+# compile file
+*.o
+# build file
+objs/*
+# install file
+dist/*
+# other
+Makefile

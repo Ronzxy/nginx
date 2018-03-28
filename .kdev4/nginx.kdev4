@@ -1,0 +1,70 @@
+[Buildset]
+BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\n\x00n\x00g\x00i\x00n\x00x)
+
+[Cppcheck]
+useSystemIncludes=true
+
+[CustomBuildSystem]
+CurrentConfiguration=BuildConfig0
+
+[CustomBuildSystem][BuildConfig0]
+BuildDir=file:///home/sg/Documents/Projects/Clang/nginx/
+Title=Linux
+
+[CustomBuildSystem][BuildConfig0][ToolBuild]
+Arguments=builder build
+Enabled=true
+Environment=
+Executable=file:///bin/bash
+Type=0
+
+[CustomBuildSystem][BuildConfig0][ToolClean]
+Arguments=builder clean
+Enabled=true
+Environment=
+Executable=file:///bin/bash
+Type=3
+
+[CustomBuildSystem][BuildConfig0][ToolConfigure]
+Arguments=builder configure
+Enabled=true
+Environment=
+Executable=file:///bin/bash
+Type=1
+
+[CustomBuildSystem][BuildConfig0][ToolInstall]
+Arguments=builder install
+Enabled=true
+Environment=
+Executable=file:///bin/bash
+Type=2
+
+[CustomBuildSystem][BuildConfig0][ToolPrune]
+Arguments=builder run
+Enabled=true
+Environment=
+Executable=file:///bin/bash
+Type=4
+
+[CustomDefinesAndIncludes][ProjectPath0]
+Path=.
+parseAmbiguousAsCPP=true
+parserArguments=-ferror-limit=100 -fspell-checking -Wdocumentation -Wunused-parameter -Wunreachable-code -Wall -std=c++11
+parserArgumentsC=-ferror-limit=100 -fspell-checking -Wdocumentation -Wunused-parameter -Wunreachable-code -Wall -std=c99
+
+[CustomDefinesAndIncludes][ProjectPath0][Compiler]
+Name=GCC
+
+[CustomDefinesAndIncludes][ProjectPath0][Includes]
+1=/home/sg/Documents/Projects/Clang/nginx/src/core
+2=/home/sg/Documents/Projects/Clang/nginx/src/os/unix
+3=/home/sg/Documents/Projects/Clang/nginx/src/event
+4=/home/sg/Documents/Projects/Clang/nginx/src/event/modules
+5=/home/sg/Documents/Projects/Clang/nginx/objs
+6=/home/sg/Documents/Projects/Clang/nginx/src/http
+7=/home/sg/Documents/Projects/Clang/nginx/src/misc
+8=/home/sg/Documents/Projects/Clang/nginx/src/stream
+9=/home/sg/Documents/Projects/Clang/nginx/src/mail
+
+[Project]
+VersionControlSupport=kdevgit
