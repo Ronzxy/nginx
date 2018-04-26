@@ -6,9 +6,9 @@ RUN echo "deb http://mirrors.163.com/debian/ jessie main" > /etc/apt/sources.lis
 #RUN echo "deb-src http://mirrors.163.com/debian/ stretch main" >> /etc/apt/sources.list
 
 # 安装依赖包
-RUN apt update && \
-    apt install -y libpcre3 zlib1g openssl libjemalloc1 locales && \
-    apt upgrade -y && \
+RUN apt-get update && \
+    apt-get install -y libpcre3 zlib1g openssl libjemalloc1 locales && \
+    apt-get upgrade -y && \
     apt-get autoclean && \
     apt-get autoremove && \
     rm -rf /var/lib/apt/lists/*

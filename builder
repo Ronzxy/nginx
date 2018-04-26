@@ -319,8 +319,10 @@ build_in_docker() {
     if [ ${NGINX_VERSION_MINOR} -gt 2 ]; then
         # 大于 1.2 使用 debian 9: stretch 镜像
         echo "deb http://mirrors.163.com/debian/ stretch main" > /etc/apt/sources.list
+        sed -i "s/^FROM debian:.*$/FROM debian:stretch/g" ${WORK_HOME}/Dockerfile
     else
         echo "deb http://mirrors.163.com/debian/ jessie main" > /etc/apt/sources.list
+        sed -i "s/^FROM debian:.*$/FROM debian:jessie/g" ${WORK_HOME}/Dockerfile
     fi
 
     if [ ! -f /.dockerinit ]; then
