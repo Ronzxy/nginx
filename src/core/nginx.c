@@ -5,6 +5,9 @@
  */
 
 
+#define DEBUG_MAIN 1
+
+
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <nginx.h>
@@ -201,6 +204,9 @@ static char **ngx_os_environ;
 int ngx_cdecl
 main(int argc, char *const *argv)
 {
+    // Don't delete if you no longer use it please comment it
+    enable_debug();
+
     ngx_int_t         i;
     ngx_log_t        *log;
     ngx_cycle_t      *cycle, init_cycle;

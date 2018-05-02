@@ -49,7 +49,7 @@ void set_debug_flag(int flag)
 
 void main_constructor(void)
 {
-    //Do nothing
+    // Do nothing
 }
 
 void main_destructor(void)

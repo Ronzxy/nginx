@@ -282,9 +282,9 @@ docker_env() {
             docker run --name build_nginx_${NGINX_VERSION} \
                 --publish 8080:8080/tcp \
                 --volume=${WORK_HOME}:/data \
-                --volume=${WORK_HOME}/data/www:/home/www \
-                --volume=${WORK_HOME}/data/conf:/etc/nginx \
-                --volume=${WORK_HOME}/data/logs:/var/log/nginx \
+                --volume=${WORK_HOME}/docker/data/www:/home/www \
+                --volume=${WORK_HOME}/docker/data/conf:/etc/nginx \
+                --volume=${WORK_HOME}/docker/data/logs:/var/log/nginx \
                 --volume=/usr/bin/docker:/usr/bin/docker \
                 --volume=/var/run/docker.sock:/var/run/docker.sock \
                 --cpu-shares=1024 --memory=512m --memory-swap=-1 \
@@ -296,9 +296,9 @@ docker_env() {
             docker run --name build_nginx_${NGINX_VERSION} \
                 --publish 8080:8080/tcp \
                 --volume=${WORK_HOME}:/data \
-                --volume=${WORK_HOME}/data/www:/home/www \
-                --volume=${WORK_HOME}/data/conf:/etc/nginx \
-                --volume=${WORK_HOME}/data/logs:/var/log/nginx \
+                --volume=${WORK_HOME}/docker/data/www:/home/www \
+                --volume=${WORK_HOME}/docker/data/conf:/etc/nginx \
+                --volume=${WORK_HOME}/docker/data/logs:/var/log/nginx \
                 --volume=/usr/bin/docker:/usr/bin/docker \
                 --volume=/var/run/docker.sock:/var/run/docker.sock \
                 --cpu-shares=1024 --memory=512m --memory-swap=-1 \
