@@ -17,6 +17,17 @@ if [ -f /proc/cpuinfo ]; then
     j="-j$(grep 'model name' /proc/cpuinfo | wc -l || 1)"
 fi
 
+check_source_file() {
+    if [ ! -s "${WORK_HOME}/src/nginx-${NGINX_VERSION}.tar.gz" ]; then
+        # 检查并安装 wget
+        dpkg -V wget || apt update && apt install -y wget
+
+        mkdir -p "${WORK_HOME}/src" > /dev/null 2>&1
+        cd "${WORK_HOME}/src"
+        wget -c http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz || exit 1
+    fi
+}
+
 check_build_tools() {
     # 安装编译工具
     if [ -f "/etc/debian_version" ]; then
