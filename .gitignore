@@ -6,3 +6,8 @@ objs/*
 dist/*
 # other
 Makefile
+# debug file
+src/core/debug.h
+src/core/debug.c
+# docker work dir
+docker/*

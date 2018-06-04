@@ -94,9 +94,15 @@ configure() {
     --with-cc-opt='-O0 -g3 -m64 -mtune=generic' \
     --with-ld-opt="-ljemalloc"
 
+    ### Begian debug options ###
+    # 用于生产环境时需要注释这些操作
+
     cp ${WORK_HOME}/debug.* ${WORK_HOME}/src/core
 
+    # 给 CFLAGS 增加 -finstrument-functions 选项，在进入和退出函数生成检测函数调用。
     sed -i "s/^CFLAGS.*$/& -finstrument-functions/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    
+    # 添加 debug.h 依赖
     sed -i "s/^CORE_DEPS.*$/&\n\tsrc\/core\/debug.h \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
     sed -i "s/^HTTP_DEPS.*$/&\n\tsrc\/core\/debug.h \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
     sed -i "s/^objs\/nginx:.*$/&\n\tobjs\/src\/core\/debug.o \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
@@ -117,9 +123,11 @@ configure() {
     grep "^#define DEBUG_MAIN 1$" ${WORK_HOME}/src/core/nginx.c > /dev/null 2>&1 || \
         sed -i "s/^[#]include <ngx_config.h>$/#define DEBUG_MAIN 1\\n\\n\\n&/g" ${WORK_HOME}/src/core/nginx.c
 
-    # main 函数加入 enable_debug()
+    # main 函数加入 enable_debug() 用于生产环境时必须注释此操作
     grep "enable_debug()" ${WORK_HOME}/src/core/nginx.c > /dev/null 2>&1 || \
         sed -i "/main(int argc, char \*const \*argv)/{n;s/{/&\\n    \/\/ Don't delete if you no longer use it please comment it\\n    enable_debug();\\n/g}" ${WORK_HOME}/src/core/nginx.c
+    
+    ### End debug options ###
 
 
     # http 2.0 模块
@@ -287,36 +295,27 @@ debug() {
 docker_env() {
     docker ps -a | grep build_nginx_${NGINX_VERSION} > /dev/null 2>&1
     if [ $? -ne 0 ]; then
-        # 容器未创建
+        # 容器未创建，选择系统版本
         if [ ${NGINX_VERSION_MINOR} -gt 2 ]; then
             # 大于 1.2 使用 debian 9: stretch 镜像
-            docker run --name build_nginx_${NGINX_VERSION} \
-                --publish 8080:8080/tcp \
-                --volume=${WORK_HOME}:/data \
-                --volume=${WORK_HOME}/docker/data/www:/home/www \
-                --volume=${WORK_HOME}/docker/data/conf:/etc/nginx \
-                --volume=${WORK_HOME}/docker/data/logs:/var/log/nginx \
-                --volume=/usr/bin/docker:/usr/bin/docker \
-                --volume=/var/run/docker.sock:/var/run/docker.sock \
-                --cpu-shares=1024 --memory=512m --memory-swap=-1 \
-                --oom-kill-disable=true \
-                --restart=always \
-                -t -i -d debian:stretch bash || exit 1
+            IMAGE_NAME=debian:stretch
         else
             # 小于 1.2 使用 debian 8: jessie 镜像
-            docker run --name build_nginx_${NGINX_VERSION} \
-                --publish 8080:8080/tcp \
-                --volume=${WORK_HOME}:/data \
-                --volume=${WORK_HOME}/docker/data/www:/home/www \
-                --volume=${WORK_HOME}/docker/data/conf:/etc/nginx \
-                --volume=${WORK_HOME}/docker/data/logs:/var/log/nginx \
-                --volume=/usr/bin/docker:/usr/bin/docker \
-                --volume=/var/run/docker.sock:/var/run/docker.sock \
-                --cpu-shares=1024 --memory=512m --memory-swap=-1 \
-                --oom-kill-disable=true \
-                --restart=always \
-                -t -i -d debian:jessie bash || exit 1
+            IMAGE_NAME=debian:jessie
         fi
+        # 创建容器
+        docker run --name build_nginx_${NGINX_VERSION} \
+            --publish 8080:8080/tcp \
+            --volume=${WORK_HOME}:/data \
+            --volume=${WORK_HOME}/docker/data/www:/home/www \
+            --volume=${WORK_HOME}/docker/data/conf:/etc/nginx \
+            --volume=${WORK_HOME}/docker/data/logs:/var/log/nginx \
+            --volume=/usr/bin/docker:/usr/bin/docker \
+            --volume=/var/run/docker.sock:/var/run/docker.sock \
+            --cpu-shares=1024 --memory=512m --memory-swap=-1 \
+            --oom-kill-disable=true \
+            --restart=always \
+            -t -i -d ${IMAGE_NAME} || exit 1
     else
         docker ps | grep build_nginx_${NGINX_VERSION} > /dev/null 2>&1
         if [ $? -ne 0 ]; then
@@ -336,12 +335,21 @@ build_in_docker() {
         sed -i "s/^FROM debian:.*$/FROM debian:jessie/g" ${WORK_HOME}/Dockerfile
     fi
 
+    # 初始化容器环境
     if [ ! -f /.dockerinit ]; then
+        apt update
+        apt install -y locales
+        apt autoremove -y || apt-get autoremove -y
+        apt upgrade -y
+
         export LC_ALL=zh_CN.UTF-8
+        export WORKDIR=/data
         printf "zh_CN.UTF-8 UTF-8\\nen_US.UTF-8 UTF-8\\n" >> /etc/locale.gen && locale-gen
         echo "export LANG=zh_CN.UTF-8" >> /etc/profile
         echo "export PATH=$PGHOME/bin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin" >> /etc/profile
         echo "Asia/Shanghai" >> /etc/timezone && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+        grep "^export WORKDIR /data$" /etc/profile > /dev/null 2>&1 || \
+            echo "export WORKDIR=/data" >> /etc/profile
 
         > /.dockerinit
     fi
@@ -359,7 +367,7 @@ docker_images() {
     # 检查 docker 依赖
     dpkg -V libltdl-dev || apt update && apt install -y libltdl-dev
     # 创建 nginx 镜像
-    docker build -t nginx:$NGINX_VERSION $WORK_HOME
+    docker build -t nginx:${NGINX_VERSION} ${WORK_HOME}
 }
 
 case "$1" in
