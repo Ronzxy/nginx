@@ -4,8 +4,13 @@ if [ ! -f "/usr/sbin/nginx" ]; then
     cp /nginx/sbin/nginx /usr/sbin
 fi
 
-if [ ! -d "/etc/nginx" ]; then
-    mkdir -p /etc/nginx
+if [ ! -f "/etc/nginx/nginx.conf" ]; then
+    if [ ! -d "/etc/nginx" ]; then
+        mkdir -p /etc/nginx
+    else
+        rm -rf /etc/nginx/*
+    fi
+
     cp -r /nginx/conf/* /etc/nginx
 fi
 

@@ -12,6 +12,7 @@ BUILD_PATH=/usr
 NGINX_VERSION=`grep "#define NGINX_VERSION" ${WORK_HOME}/src/core/nginx.h | awk -F ' ' '{print $3}' | awk -F '"' '{print $2}'`
 NGINX_VERSION_MINOR=`printf $NGINX_VERSION | awk -F '.' '{print $2}'`
 NGX_CONF_DIR=${WORK_HOME}/dist/nginx/conf
+
 # 探测cpu核心数
 if [ -f /proc/cpuinfo ]; then
     j="-j$(grep 'model name' /proc/cpuinfo | wc -l || 1)"
@@ -94,40 +95,8 @@ configure() {
     --with-cc-opt='-O0 -g3 -m64 -mtune=generic' \
     --with-ld-opt="-ljemalloc"
 
-    ### Begian debug options ###
-    # 用于生产环境时需要注释这些操作
 
-    cp ${WORK_HOME}/debug.* ${WORK_HOME}/src/core
-
-    # 给 CFLAGS 增加 -finstrument-functions 选项，在进入和退出函数生成检测函数调用。
-    sed -i "s/^CFLAGS.*$/& -finstrument-functions/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-    
-    # 添加 debug.h 依赖
-    sed -i "s/^CORE_DEPS.*$/&\n\tsrc\/core\/debug.h \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-    sed -i "s/^HTTP_DEPS.*$/&\n\tsrc\/core\/debug.h \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-    sed -i "s/^objs\/nginx:.*$/&\n\tobjs\/src\/core\/debug.o \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-    sed -i "s/^\t\$(LINK).*$/&\n\tobjs\/src\/core\/debug.o \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-
-    # 编译 debug.c
-    sed -i "s/^objs\/src\/core\/nginx.o:.*$/objs\/src\/core\/debug.o: \$\(CORE_DEPS\) \\\\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-    sed -i "s/^objs\/src\/core\/nginx.o:.*$/\tsrc\/core\/debug.c\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-    sed -i "s/^objs\/src\/core\/nginx.o:.*$/\t\$\(CC\) -c \$\(CFLAGS\) \$\(CORE_INCS\) \\\\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-    sed -i "s/^objs\/src\/core\/nginx.o:.*$/\t\t-o objs\/src\/core\/debug.o \\\\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-    sed -i "s/^objs\/src\/core\/nginx.o:.*$/\t\tsrc\/core\/debug.c\\n\\n\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
-
-    # 引用 debug.h 头文件
-    grep "^[#]include <debug.h>$" ${WORK_HOME}/src/core/ngx_core.h > /dev/null 2>&1 || \
-        sed -i "s/^[#]include <ngx_errno.h>$/#include <debug.h>\\n&/g" ${WORK_HOME}/src/core/ngx_core.h
-
-    # 加入 DEBUG_MAIN 宏
-    grep "^#define DEBUG_MAIN 1$" ${WORK_HOME}/src/core/nginx.c > /dev/null 2>&1 || \
-        sed -i "s/^[#]include <ngx_config.h>$/#define DEBUG_MAIN 1\\n\\n\\n&/g" ${WORK_HOME}/src/core/nginx.c
-
-    # main 函数加入 enable_debug() 用于生产环境时必须注释此操作
-    grep "enable_debug()" ${WORK_HOME}/src/core/nginx.c > /dev/null 2>&1 || \
-        sed -i "/main(int argc, char \*const \*argv)/{n;s/{/&\\n    \/\/ Don't delete if you no longer use it please comment it\\n    enable_debug();\\n/g}" ${WORK_HOME}/src/core/nginx.c
-    
-    ### End debug options ###
+    enable_debug
 
 
     # http 2.0 模块
@@ -176,10 +145,48 @@ install() {
     fi
 }
 
+enable_debug() {
+    ### Begian debug options ###
+    # 用于生产环境时需要注释这些操作
+
+    cp ${WORK_HOME}/debug.* ${WORK_HOME}/src/core
+
+    # 给 CFLAGS 增加 -finstrument-functions 选项，在进入和退出函数生成检测函数调用。
+    sed -i "s/^CFLAGS.*$/& -finstrument-functions/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    
+    # 添加 debug.h 依赖
+    sed -i "s/^CORE_DEPS.*$/&\n\tsrc\/core\/debug.h \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    sed -i "s/^HTTP_DEPS.*$/&\n\tsrc\/core\/debug.h \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    sed -i "s/^objs\/nginx:.*$/&\n\tobjs\/src\/core\/debug.o \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    sed -i "s/^\t\$(LINK).*$/&\n\tobjs\/src\/core\/debug.o \\\/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+
+    # 编译 debug.c
+    sed -i "s/^objs\/src\/core\/nginx.o:.*$/objs\/src\/core\/debug.o: \$\(CORE_DEPS\) \\\\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    sed -i "s/^objs\/src\/core\/nginx.o:.*$/\tsrc\/core\/debug.c\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    sed -i "s/^objs\/src\/core\/nginx.o:.*$/\t\$\(CC\) -c \$\(CFLAGS\) \$\(CORE_INCS\) \\\\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    sed -i "s/^objs\/src\/core\/nginx.o:.*$/\t\t-o objs\/src\/core\/debug.o \\\\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+    sed -i "s/^objs\/src\/core\/nginx.o:.*$/\t\tsrc\/core\/debug.c\\n\\n\\n&/g" ${WORK_HOME}/objs/Makefile > /dev/null 2>&1
+
+    # 引用 debug.h 头文件
+    grep "^[#]include <debug.h>$" ${WORK_HOME}/src/core/ngx_core.h > /dev/null 2>&1 || \
+        sed -i "s/^[#]include <ngx_errno.h>$/#include <debug.h>\\n&/g" ${WORK_HOME}/src/core/ngx_core.h
+
+    # 加入 DEBUG_MAIN 宏
+    grep "^#define DEBUG_MAIN 1$" ${WORK_HOME}/src/core/nginx.c > /dev/null 2>&1 || \
+        sed -i "s/^[#]include <ngx_config.h>$/#define DEBUG_MAIN 1\\n\\n\\n&/g" ${WORK_HOME}/src/core/nginx.c
+
+    # main 函数加入 enable_debug() 用于生产环境时必须注释此操作
+    grep "enable_debug()" ${WORK_HOME}/src/core/nginx.c > /dev/null 2>&1 || \
+        sed -i "/main(int argc, char \*const \*argv)/{n;s/{/&\\n    \/\/ Don't delete if you no longer use it please comment it\\n    enable_debug();\\n/g}" ${WORK_HOME}/src/core/nginx.c
+    
+    ### End debug options ###
+}
+
 # 初始化运行环境
 make_env() {
     mkdir -p ${WORK_HOME}/dist/nginx/logs ${WORK_HOME}/dist/nginx/cache
     
+    # 如果运行环境是 docker 则使用生产环境配置
     if [ -r /.dockerenv ]; then
         NGX_CONF_DIR="/etc/nginx"
     fi
@@ -296,7 +303,7 @@ docker_env() {
     docker ps -a | grep build_nginx_${NGINX_VERSION} > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         # 容器未创建，选择系统版本
-        if [ ${NGINX_VERSION_MINOR} -gt 2 ]; then
+        if [ ${NGINX_VERSION_MAJOR} -gt 1 -a ${NGINX_VERSION_MINOR} -gt 2 ]; then
             # 大于 1.2 使用 debian 9: stretch 镜像
             IMAGE_NAME=debian:stretch
         else
